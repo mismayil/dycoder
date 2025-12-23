@@ -16,6 +16,32 @@ Outputs = namedtuple("Outputs", ["loss", "inputs_embeds", "logits"])
 MAX_N_LATENT = 8
 
 
+def _get_past_key_values_for_batch(batch_kv_cache, batch_indices, compute_range):
+    if batch_kv_cache[batch_indices[0]] is not None:
+        past_key_values_lst = []
+        # extract kv cache to reuse
+        for b in batch_indices:
+            past_key_values_lst.append([
+                (
+                    k[:, :, : compute_range.start, :],
+                    v[:, :, : compute_range.start, :],
+                )
+                for (k, v) in batch_kv_cache[b]]
+            )
+        k_list, v_list = [], []
+        for i in range(len(past_key_values_lst[0])):
+            k_list.append(torch.cat([past_key_values_lst[b_idx][i][0] for b_idx in range(len(batch_indices))], dim=0))
+            v_list.append(torch.cat([past_key_values_lst[b_idx][i][1] for b_idx in range(len(batch_indices))], dim=0))
+        past_key_values = list(zip(k_list, v_list))
+        return past_key_values
+    return None
+
+def _cache_past_key_values_for_batch(batch_kv_cache, batch_indices, kv_cache):
+    for idx, b in enumerate(batch_indices):
+        batch_kv_cache[b] = []
+        for (k, v) in kv_cache:
+            batch_kv_cache[b].append( (k[idx:idx+1, :, :, :], v[idx:idx+1, :, :, :]) )
+
 class Dycoder(nn.Module):
 
     def __init__(
@@ -76,45 +102,65 @@ class Dycoder(nn.Module):
         batch_cr_iterator = BatchComputeRangeIterator(batch_compute_ranges)
         inputs_embeds = self.embedding(input_ids)
         batch_inputs_embeds = [inputs_embeds[b] for b in range(input_ids.shape[0])]
-        batch_logits = [None] * input_ids.shape[0]
+        batch_logits = [[] for _ in range(input_ids.shape[0])]
+        batch_kv_cache = [None] * input_ids.shape[0]
 
         for (lang_batch_indices, lang_compute_range), (latent_batch_indices, latent_compute_range) in batch_cr_iterator:
             
             if lang_batch_indices is not None:
-                lang_inputs_embeds = torch.stack([batch_inputs_embeds[b][: lang_compute_range.end, :] for b in lang_batch_indices])
+                lang_inputs_embeds = torch.stack([batch_inputs_embeds[b][lang_compute_range.start : lang_compute_range.end, :] for b in lang_batch_indices])
                 lang_attention_mask = torch.stack([attention_mask[b, : lang_compute_range.end] for b in lang_batch_indices])
-                lang_position_ids = torch.stack([position_ids[b, : lang_compute_range.end] for b in lang_batch_indices])
+                lang_position_ids = torch.stack([position_ids[b, lang_compute_range.start : lang_compute_range.end] for b in lang_batch_indices])
+                
+                past_key_values = _get_past_key_values_for_batch(batch_kv_cache, lang_batch_indices, lang_compute_range)
+                
                 outputs = self.base_causallm(
                     inputs_embeds=lang_inputs_embeds,
                     attention_mask=lang_attention_mask,
                     position_ids=lang_position_ids,
                     output_hidden_states=True,
+                    past_key_values=past_key_values,
                 )
 
                 hidden_states = outputs.hidden_states[-1]  # Get the last layer hidden states
 
                 for idx, b in enumerate(lang_batch_indices):
-                    batch_logits[b] = outputs.logits[idx]
+                    batch_logits[b].append(outputs.logits[idx])
+
+                _cache_past_key_values_for_batch(batch_kv_cache, lang_batch_indices, outputs.past_key_values)
 
             if latent_batch_indices is not None:
+                past_key_values = _get_past_key_values_for_batch(batch_kv_cache, latent_batch_indices, ComputeRange(latent_compute_range.start+1, latent_compute_range.end, "latent"))
+                
                 for latent_id in range(latent_compute_range.start+1, latent_compute_range.end+1):
-                    latent_inputs_embeds = torch.stack([batch_inputs_embeds[b][: latent_id, :] for b in latent_batch_indices])
+                    latent_inputs_embeds = torch.stack([batch_inputs_embeds[b][latent_id-1: latent_id, :] for b in latent_batch_indices])
                     latent_attention_mask = torch.stack([attention_mask[b, : latent_id] for b in latent_batch_indices])
-                    latent_position_ids = torch.stack([position_ids[b, : latent_id] for b in latent_batch_indices])
+                    latent_position_ids = torch.stack([position_ids[b, latent_id-1: latent_id] for b in latent_batch_indices])
+
                     outputs = self.base_causallm(
                         inputs_embeds=latent_inputs_embeds,
                         attention_mask=latent_attention_mask,
                         position_ids=latent_position_ids,
                         output_hidden_states=True,
+                        past_key_values=past_key_values,
                     )
-                    hidden_states = outputs.hidden_states[-1]  # Get the last layer hidden states
-                    for idx, b in enumerate(latent_batch_indices):
-                        batch_inputs_embeds[b][latent_id] = hidden_states[idx][latent_id - 1, :]
-                        batch_logits[b] = outputs.logits[idx]
 
+                    past_key_values = outputs.past_key_values
+
+                    hidden_states = outputs.hidden_states[-1]  # Get the last layer hidden states
+                    
+                    for idx, b in enumerate(latent_batch_indices):
+                        batch_logits[b].append(outputs.logits[idx])
+                        batch_inputs_embeds[b][latent_id] = hidden_states[idx][-1, :] 
+                
+                _cache_past_key_values_for_batch(batch_kv_cache, latent_batch_indices, past_key_values)
+                
                 self.gen_forward_cnt += (latent_compute_range.end - latent_compute_range.start)
 
-        logits = torch.stack(batch_logits)
+        logits_lst = []
+        for b in range(input_ids.shape[0]):
+            logits_lst.append(torch.cat(batch_logits[b], dim=0))
+        logits = torch.stack(logits_lst, dim=0)
         shift_logits = logits[..., :-1, :].contiguous()
         shift_labels = labels[..., 1:].contiguous()
         loss_fct = CrossEntropyLoss()

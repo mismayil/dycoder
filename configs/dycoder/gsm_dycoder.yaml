@@ -1,8 +1,8 @@
 # need 4 gpus
 
 project: dycoder
-save_path: /mnt/scratch/home/ismayilz/project-dycoder/models/gsm-dycoder
-name: gsm-dycoder
+save_path: /mnt/scratch/home/ismayilz/project-dycoder/models
+name: gsm-dycoder-kv-cache
 
 only_eval: False
 
@@ -22,8 +22,8 @@ train_path: data/gsm_train.json
 val_path: data/gsm_valid.json
 reset_optimizer: True
 batch_size_training: 32
-debug: True
+debug: False
 gradient_accumulation_steps: 1
-num_epochs: 1
+num_epochs: 10
 lr: !!float "1e-4"
 weight_decay: 0.01
