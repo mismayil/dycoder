@@ -85,7 +85,7 @@ RUN ${CONDA} run -n ${CONDA_ENV} pip install ipykernel ipywidgets
 
 # Install dependencies
 COPY --chown=${USER_NAME} ./requirements.txt .
-RUN ${CONDA} run -n ${CONDA_ENV} pip install -r ./requirements.txt
+RUN --mount=type=cache,id=pip,target=${HOME}/.cache/pip ${CONDA} run -n ${CONDA_ENV} pip install -r requirements.txt
 
 # Transfer scripts
 COPY --chown=${USER_NAME} ./docker/entrypoint.sh .
@@ -94,4 +94,5 @@ RUN chmod +x ./entrypoint.sh
 COPY --chown=${USER_NAME} ./docker/startup.sh .
 RUN chmod +x ./startup.sh
 
-ENTRYPOINT ["/bin/bash"]
+ENTRYPOINT ["./entrypoint.sh"]
+CMD ["/bin/bash"]

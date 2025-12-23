@@ -9,4 +9,4 @@ CONDA=/home/ismayilz/.conda/condabin/conda
 PROJECT_HOME=$SCRATCH_HOME/project-dycoder
 
 cd $PROJECT_HOME/dycoder
-${CONDA} run -n ${CONDA_ENV} --live-stream bash "$@"
+${CONDA} run -n ${CONDA_ENV} --live-stream "$@"

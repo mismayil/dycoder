@@ -10,9 +10,6 @@ JOB_SUFFIX="dev"
 MEMORY="64G"
 GPU_MEMORY="32G"
 VERBOSE=1
-RUN_COMMAND=""
-INTERACTIVE_RUN_COMMAND="bash startup.sh"
-TRAIN_RUN_COMMAND="bash entrypoint.sh"
 N_GPUS_SET=1
 NODE_POOL="default"
 DELETE_JOBS=0
@@ -49,9 +46,6 @@ while getopts m:l:c:g:ps:u:r:n:e:dq opt; do
 			;;
 		u)
 			GPU_MEMORY=${OPTARG}
-			;;
-		r)
-			RUN_COMMAND=${OPTARG}
 			;;
 		n)
 			NODE_POOL=${OPTARG}
@@ -144,11 +138,7 @@ fi
 if [ "$COMMAND" == "run" ]; then
 	echo "Job [$JOB_NAME]"
 
-	if [ "$RUN_COMMAND" == "" ]; then
-		RUN_COMMAND="$TRAIN_RUN_COMMAND $ENTRYPOINT_ARGS"
-	fi
-
-	echo "Running command: $RUN_COMMAND"
+	echo "Running command: $ENTRYPOINT_ARGS"
 
 	runai submit $JOB_NAME \
 		-i $IMAGE \
@@ -159,19 +149,13 @@ if [ "$COMMAND" == "run" ]; then
 		$GPU_ARGS \
 		$NODE_POOL_ARGS \
 		--pvc nlp-scratch:/mnt/scratch \
-		--command -- $RUN_COMMAND
+		-- $ENTRYPOINT_ARGS
 	exit 0
 fi
 
 # Run this for interactive mode
 if [ "$COMMAND" == "run_bash" ]; then
 	echo "Job [$JOB_NAME]"
-
-	if [ "$RUN_COMMAND" == "" ]; then
-		RUN_COMMAND="$INTERACTIVE_RUN_COMMAND"
-	fi
-
-	echo "Running command: $RUN_COMMAND"
 
 	runai submit $JOB_NAME \
 		-i $IMAGE \
@@ -184,8 +168,7 @@ if [ "$COMMAND" == "run_bash" ]; then
 		--pvc nlp-scratch:/mnt/scratch \
 		--interactive \
 		--attach \
-		$PREEMPTIBLE_ARGS \
-		--command -- $RUN_COMMAND
+		$PREEMPTIBLE_ARGS
 	exit 0
 fi
 

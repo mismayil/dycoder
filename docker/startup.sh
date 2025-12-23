@@ -18,4 +18,3 @@ echo "export SCRATCH_HOME=$SCRATCH_HOME" >> ~/.bashrc
 echo "export PROJECT_HOME=$PROJECT_HOME" >> ~/.bashrc
 
 source ~/.bashrc
-exec /bin/bash
