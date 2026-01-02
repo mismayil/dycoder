@@ -34,7 +34,9 @@ import gc
 import argparse
 import functools
 from utils import Config, set_seed
+from dotenv import load_dotenv
 
+load_dotenv()
 
 def main():
 
@@ -212,6 +214,8 @@ def main():
 
     if "gsm" in configs.val_path:
         max_new_tokens = 64
+    elif "math" in configs.val_path:
+        max_new_tokens = 2048
     else:
         max_new_tokens = 128
 

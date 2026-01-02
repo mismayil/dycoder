@@ -2,7 +2,7 @@
 
 project: dycoder
 save_path: /mnt/scratch/home/ismayilz/project-dycoder/models
-name: gsm-dycoder-kv-cache
+name: gsm-dycoder-gpt2
 
 only_eval: False
 
@@ -18,12 +18,12 @@ load_model_path: null
 seed: 0
 resume: 0
 bf16: False
-train_path: data/gsm_train.json
-val_path: data/gsm_valid.json
+train_path: data/gsm/gsm_train.json
+val_path: data/gsm/gsm_valid.json
 reset_optimizer: True
 batch_size_training: 32
 debug: False
 gradient_accumulation_steps: 1
-num_epochs: 10
+num_epochs: 5
 lr: !!float "1e-4"
 weight_decay: 0.01
