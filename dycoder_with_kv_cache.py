@@ -42,7 +42,7 @@ def _cache_past_key_values_for_batch(batch_kv_cache, batch_indices, kv_cache):
         for (k, v) in kv_cache:
             batch_kv_cache[b].append( (k[idx:idx+1, :, :, :], v[idx:idx+1, :, :, :]) )
 
-class Dycoder(nn.Module):
+class DycoderWithKVCache(nn.Module):
 
     def __init__(
         self,
@@ -53,7 +53,7 @@ class Dycoder(nn.Module):
         eos_token_id,
     ):
 
-        super(Dycoder, self).__init__()
+        super(DycoderWithKVCache, self).__init__()
         self.gen_forward_cnt = 0
         self.base_causallm = base_causallm
         self.latent_token_id = latent_token_id

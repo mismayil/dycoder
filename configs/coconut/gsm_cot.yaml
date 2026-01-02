@@ -1,7 +1,7 @@
 # need 4 gpus
 
-project: coconut
-save_path: /mnt/scratch/home/ismayilz/project-coconut/models/gsm-cot
+project: dycoder
+save_path: /mnt/scratch/home/ismayilz/project-dycoder/models
 name: gsm-cot
 
 only_eval: False
