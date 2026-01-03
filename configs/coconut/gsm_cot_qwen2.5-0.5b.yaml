@@ -2,7 +2,7 @@
 
 project: dycoder
 save_path: /mnt/scratch/home/ismayilz/project-dycoder/models
-name: math-cot-qwen2.5-0.5b-e5
+name: gsm-cot-qwen2.5-0.5b-e5
 
 only_eval: False
 
@@ -23,8 +23,8 @@ load_model_path: None
 seed: 0
 resume: 0
 bf16: False
-train_path: data/math/math_train.json
-val_path: data/math/math_val.json
+train_path: data/gsm/gsm_train.json
+val_path: data/gsm/gsm_valid.json
 reset_optimizer: False
 batch_size_training: 4
 debug: False

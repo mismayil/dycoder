@@ -97,7 +97,7 @@ class Dycoder(nn.Module):
                     batch_logits[b] = outputs.logits[idx]
 
             if latent_batch_indices is not None:
-                for latent_id in range(latent_compute_range.start+1, latent_compute_range.end+1):
+                for latent_id in range(latent_compute_range.start+1, latent_compute_range.end):
                     latent_inputs_embeds = torch.stack([batch_inputs_embeds[b][: latent_id, :] for b in latent_batch_indices])
                     latent_attention_mask = torch.stack([attention_mask[b, : latent_id] for b in latent_batch_indices])
                     latent_position_ids = torch.stack([position_ids[b, : latent_id] for b in latent_batch_indices])

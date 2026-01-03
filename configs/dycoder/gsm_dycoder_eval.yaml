@@ -2,9 +2,9 @@
 
 project: dycoder
 save_path: /mnt/scratch/home/ismayilz/project-dycoder/models
-name: gsm-dycoder-gpt2-v2
+name: gsm-dycoder-gpt2
 
-only_eval: False
+only_eval: True
 
 c_thought: 1
 epochs_per_stage: 5
@@ -14,7 +14,7 @@ pad_latent_to_max: True
 save_only_improve: False
 uniform_prob: 0.0
 model_id: openai-community/gpt2
-load_model_path: null
+load_model_path: /mnt/scratch/home/ismayilz/project-dycoder/models/gsm-dycoder-gpt2/checkpoint_3
 seed: 0
 resume: 0
 bf16: False
