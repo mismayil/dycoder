@@ -348,10 +348,10 @@ def main():
                     )
                     print("saving model.")
 
-                    dist.barrier()
-                    del states
-                    gc.collect()
-                    torch.cuda.empty_cache()
+                dist.barrier()
+                del states
+                gc.collect()
+                torch.cuda.empty_cache()
 
             # val loss
             total_loss = 0
